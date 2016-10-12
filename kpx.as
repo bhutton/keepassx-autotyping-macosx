@@ -6,7 +6,8 @@ on open location localURL
 	-- * kpx-ssh://alice:xyz@wonderland.com:22022
 	-- * kpx-https://alice:xyz@wonderland.com:40443/home	
 	
-	set myTerm to "iTerm2"
+	set myTerm to "Terminal"
+	set altKey to ""
 	
 	-- display dialog "URL: " & localURL
 	
@@ -17,12 +18,22 @@ on open location localURL
 			set theProto to "ssh"
 			set theData to text 5 thru -1 of thePath
 		else
-			if (text 1 thru 6 of thePath) is "https?" then
+			if (text 1 thru 7 of thePath) is "https??" then
+				-- https? and form requires extra tab
+				set altKey to "extratab"
+				set theProto to "https"
+				set theData to text 8 thru -1 of thePath
+			else if (text 1 thru 6 of thePath) is "https?" then
 				-- https?
 				set theProto to "https"
 				set theData to text 7 thru -1 of thePath
 			else
-				if (text 1 thru 5 of thePath) is "http?" then
+				if (text 1 thru 6 of thePath) is "http??" then
+					-- http? and form requires extra tab
+					set altKey to "extratab"
+					set theProto to "http"
+					set theData to text 7 thru -1 of thePath
+				else if (text 1 thru 5 of thePath) is "http?" then
 					-- http?
 					set theProto to "http"
 					set theData to text 6 thru -1 of thePath
@@ -105,41 +116,6 @@ on open location localURL
 					end tell
 				end if
 			end tell
-		else
-			-- display dialog "iTerm2"
-			
-			tell application "System Events"
-				set isRunning to (exists (processes where name is "iTerm"))
-			end tell
-			tell application "iTerm"
-				activate
-				delay 1
-				set termCount to count of terminals
-				
-				if termCount is 0 then
-					set crtTerm to (make new terminal)
-				else
-					set crtTerm to the last terminal
-				end if
-				
-				tell crtTerm
-					if not isRunning and termCount is not 0 then
-						set crtSession to current session
-					else
-						set crtSession to (launch session "Default")
-					end if
-					tell crtSession to write text "clear; " & theSSHUrl & "\n"
-					delay 1
-					set theButton to button returned of (display dialog "Auto type? (" & theAddr & ")" buttons {"No", "Yes"} default button "Yes")
-					if theButton is "Yes" then
-						tell i term application "System Events"
-							keystroke thePass
-							key code 52
-						end tell
-					end if
-				end tell
-			end tell
-			
 		end if
 	else
 		set theHTTPUrl to theProto & "://" & theAddr
@@ -152,8 +128,12 @@ on open location localURL
 			set theButton to button returned of (display dialog "Auto type? (" & theAddr & ")" buttons {"No", "Yes"} default button "Yes")
 			if theButton is "Yes" then
 				tell application "System Events"
+					-- if form requires extra tab
+					if altKey is "extratab" then
+						key code 48
+					end if
 					keystroke theUser
-					keystroke " "
+					key code 48
 					keystroke thePass
 					key code 52
 				end tell
